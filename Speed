@@ -1,0 +1,72 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local speed = 2000             -- per coerenza col tuo valore di velocità
+local orbitRadius = 10         -- distanza dal giocatore
+local rotationTimePerPlayer = 1.5 -- tempo (in secondi) che la parte passa a orbitare intorno a un singolo giocatore
+local transitionSpeed = 100    -- velocità con cui la parte si sposta verso il giocatore successivo (studs per secondo)
+
+-- Crea la parte che orbita
+local orbitPart = Instance.new("Part")
+orbitPart.Size = Vector3.new(2, 2, 2)
+orbitPart.Anchored = true
+orbitPart.CanCollide = false
+orbitPart.Material = Enum.Material.Neon
+orbitPart.Color = Color3.new(1, 0, 0)
+orbitPart.Parent = workspace
+
+-- Funzione per ottenere la lista giocatori validi
+local function getPlayers()
+    local list = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(list, plr)
+        end
+    end
+    return list
+end
+
+local RunService = game:GetService("RunService")
+
+local function lerp(a, b, t)
+    return a + (b - a) * t
+end
+
+-- Funzione principale per gestire l'orbita veloce
+local function orbitRace()
+    while true do
+        local players = getPlayers()
+        if #players == 0 then
+            RunService.RenderStepped:Wait()
+            continue
+        end
+
+        for _, player in ipairs(players) do
+            local root = player.Character.HumanoidRootPart
+            local elapsed = 0
+            local angle = 0
+
+            -- Sposta la parte vicino al punto di partenza dell'orbita (istantaneamente)
+            orbitPart.CFrame = CFrame.new(root.Position + Vector3.new(orbitRadius, 3, 0), root.Position)
+
+            while elapsed < rotationTimePerPlayer do
+                local dt = RunService.RenderStepped:Wait()
+                elapsed = elapsed + dt
+
+                -- Incrementa l'angolo basandoci sul tempo passato
+                angle = angle + (math.rad(speed / 20) * dt)  -- stessa scala usata prima
+
+                -- Calcola la posizione orbitale attorno al giocatore
+                local offsetX = math.cos(angle) * orbitRadius
+                local offsetZ = math.sin(angle) * orbitRadius
+                local pos = root.Position + Vector3.new(offsetX, 3, offsetZ)
+
+                -- Aggiorna la posizione e orientamento della parte
+                orbitPart.CFrame = CFrame.new(pos, root.Position)
+            end
+        end
+    end
+end
+
+-- Avvia il ciclo di orbiting/racing
+task.spawn(orbitRace)
